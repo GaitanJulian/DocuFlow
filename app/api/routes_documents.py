@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from typing import List, Optional
+from uuid import uuid4
+from pathlib import Path
 
-from app.api.deps import get_current_user, get_db
-from app.models.user import User
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_db, get_current_user
+from app.core.config import settings
 from app.models.document import Document, DocumentStatus
+from app.models.user import User
 from app.schemas.document import DocumentCreate, DocumentRead
 
 
@@ -87,3 +91,43 @@ def index_document(
     db.commit()
     db.refresh(doc)
     return doc
+
+@router.post("/upload", response_model=DocumentRead)
+async def upload_document(
+    title: str = Form(...),
+    description: str = Form(""),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Sube un archivo real y crea un registro de Document asociado al usuario actual.
+    """
+    # Crear directorio si no existe
+    upload_dir = Path(settings.FILES_DIR)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    # Nombre único para almacenar el archivo
+    ext = Path(file.filename).suffix
+    stored_name = f"{uuid4().hex}{ext}"
+    file_path = upload_dir / stored_name
+
+    # Leer contenido y guardar en disco
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    document = Document(
+    owner_id=current_user.id,
+    filename=stored_name,
+    content_type=file.content_type or "application/octet-stream",
+    status=DocumentStatus.UPLOADED,
+    # guardamos el “title” en tags para no perderlo del todo
+    tags=title,
+)
+
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+
+    return document
