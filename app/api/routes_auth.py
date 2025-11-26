@@ -14,7 +14,7 @@ from app.schemas.user import UserCreate, UserRead
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
-@router.post("/register", response_model=UserRead)
+@router.post("/register",status_code=status.HTTP_201_CREATED,  response_model=UserRead)
 def register_user(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
     existing_user = db.query(User).filter(User.email == user_in.email).first()
     if existing_user:
