@@ -4,12 +4,16 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
+from typing import List
 
 from app.api.deps import get_db, get_current_user
 from app.core.config import settings
 from app.models.document import Document, DocumentStatus
 from app.models.user import User
 from app.schemas.document import DocumentCreate, DocumentRead
+from app.tasks.documents import index_document_task
+
+
 
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -131,3 +135,33 @@ async def upload_document(
     db.refresh(document)
 
     return document
+
+@router.post("/{document_id}/index", status_code=status.HTTP_202_ACCEPTED)
+def trigger_index_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lanza la tarea asíncrona para indexar un documento.
+    """
+    document = db.query(Document).filter(
+        Document.id == document_id,
+        Document.owner_id == current_user.id,
+    ).first()
+
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Opcional: evitar reindexar si ya está indexado
+    if document.status == DocumentStatus.INDEXED:
+        raise HTTPException(status_code=400, detail="Document already indexed")
+
+    # Lanzar tarea de Celery
+    task_result = index_document_task.delay(document_id)
+
+    return {
+        "message": "Indexing task enqueued",
+        "document_id": document_id,
+        "task_id": task_result.id,
+    }
