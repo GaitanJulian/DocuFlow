@@ -62,17 +62,22 @@ def list_documents(
     return query.order_by(Document.created_at.desc()).all()
 
 
+"""
 @router.post("/{document_id}/index", response_model=DocumentRead)
 def index_document(
     document_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> DocumentRead:
-    """
-    Simula el proceso de indexación:
+"""
+
+"""
+    - Simula el proceso de indexación:
     - Cambia status a INDEXED
     - Genera un texto 'indexado' dummy
-    """
+"""
+
+"""
     doc = (
         db.query(Document)
         .filter(
@@ -95,7 +100,7 @@ def index_document(
     db.commit()
     db.refresh(doc)
     return doc
-
+"""
 @router.post("/upload", response_model=DocumentRead)
 async def upload_document(
     title: str = Form(...),

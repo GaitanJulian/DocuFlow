@@ -22,9 +22,13 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered",
         )
+    
+    is_admin = db.query(User).count() == 0
+
     user = User(
         email=user_in.email,
         hashed_password=get_password_hash(user_in.password),
+        is_admin=is_admin,
     )
     db.add(user)
     db.commit()

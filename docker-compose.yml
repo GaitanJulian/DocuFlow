@@ -17,6 +17,11 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: docuflow-redis
+    restart: unless-stopped
+
   api:
     build: .
     container_name: docuflow-api
@@ -24,39 +29,45 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
     environment:
-      # Esta URL se usará tanto en FastAPI como en Alembic
+      # si quieres sobreescribir algo de .env, puedes hacerlo aquí
       DATABASE_URL: postgresql://docuflow:docuflow@db:5432/docuflow
-      JWT_SECRET_KEY: super_secret_dev_key
     ports:
       - "8000:8000"
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
 
   celery_worker:
     build: .
-    command: celery -A app.core.celery_app.celery_app worker --loglevel=info --concurrency=1
-    depends_on:
-      - redis
-      - db
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    container_name: docuflow-worker
+    command: celery -A app.core.celery_app.celery_app worker -Q documents -l info
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    volumes:
+      - .:/app
 
   celery_beat:
     build: .
-    command: celery -A app.core.celery_app.celery_app beat --loglevel=info
-    depends_on:
-      - redis
-      - db
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    container_name: docuflow-beat
+    command: celery -A app.core.celery_app.celery_app beat -l info
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    volumes:
+      - .:/app
 
 volumes:
   docuflow_db_data:
