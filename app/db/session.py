@@ -1,22 +1,14 @@
-# app/db/session.py
+import os
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 
-engine = create_engine(settings.DATABASE_URL, future=True)
-
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
+os.environ.setdefault("PGCLIENTENCODING", "LATIN1")
+engine = create_engine(
+    settings.DATABASE_URL,
     future=True,
+    connect_args={"client_encoding": "LATIN1"},
 )
-
-
-def get_db() -> Session:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)

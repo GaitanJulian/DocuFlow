@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16
+    container_name: docuflow-db
+    restart: always
+    environment:
+      POSTGRES_USER: docuflow
+      POSTGRES_PASSWORD: docuflow
+      POSTGRES_DB: docuflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - docuflow_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docuflow -d docuflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: docuflow-api
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Esta URL se usará tanto en FastAPI como en Alembic
+      DATABASE_URL: postgresql://docuflow:docuflow@db:5432/docuflow
+      JWT_SECRET_KEY: super_secret_dev_key
+    ports:
+      - "8000:8000"
+
+volumes:
+  docuflow_db_data:
