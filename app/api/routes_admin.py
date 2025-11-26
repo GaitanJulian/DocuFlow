@@ -68,7 +68,7 @@ def retry_failed_documents_manual(
     current_admin: User = Depends(get_current_admin),
 ):
     """
-    Dispara el reintento de documentos FAILED desde la API.
+    Trigger a retry for FAILED documents through the API.
     """
     async_result = retry_failed_documents_task.delay()
     return {

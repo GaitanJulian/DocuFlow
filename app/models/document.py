@@ -37,7 +37,7 @@ class Document(Base):
         onupdate=datetime.utcnow,
     )
 
-    # Relación inversa al User.documents
+    # Reverse relationship to User.documents
     owner: Mapped["User"] = relationship(
         "User",
         back_populates="documents",

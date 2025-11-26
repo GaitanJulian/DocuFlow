@@ -5,7 +5,7 @@ from app.api import router as api_router
 from app.db.base import Base
 from app.db.session import engine
 
-# IMPORTA los modelos aquí para que se registren en Base.metadata
+# IMPORT the models here so they register with Base.metadata
 import app.models  # noqa
 
 
@@ -14,7 +14,7 @@ app = FastAPI(title="DocuFlow")
 
 @app.on_event("startup")
 def on_startup() -> None:
-    # Esto creará las tablas para todos los modelos registrados
+    # This will create tables for every registered model
     Base.metadata.create_all(bind=engine)
 
 

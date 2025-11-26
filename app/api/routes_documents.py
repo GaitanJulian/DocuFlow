@@ -62,45 +62,6 @@ def list_documents(
     return query.order_by(Document.created_at.desc()).all()
 
 
-"""
-@router.post("/{document_id}/index", response_model=DocumentRead)
-def index_document(
-    document_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> DocumentRead:
-"""
-
-"""
-    - Simula el proceso de indexación:
-    - Cambia status a INDEXED
-    - Genera un texto 'indexado' dummy
-"""
-
-"""
-    doc = (
-        db.query(Document)
-        .filter(
-            Document.id == document_id,
-            Document.owner_id == current_user.id,
-        )
-        .first()
-    )
-
-    if not doc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found",
-        )
-
-    doc.status = DocumentStatus.INDEXED
-    doc.indexed_text = f"Indexed content for {doc.filename} (simulated)."
-
-    db.add(doc)
-    db.commit()
-    db.refresh(doc)
-    return doc
-"""
 @router.post("/upload", response_model=DocumentRead)
 async def upload_document(
     title: str = Form(...),
@@ -110,7 +71,7 @@ async def upload_document(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Sube un archivo real y crea un registro de Document asociado al usuario actual.
+    Upload a document file and create a Document record.
     """
     # Crear directorio si no existe
     upload_dir = Path(settings.FILES_DIR)
@@ -148,7 +109,7 @@ def trigger_index_document(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Lanza la tarea asíncrona para indexar un documento.
+    Trigger indexing of a document by its owner.
     """
     document = db.query(Document).filter(
         Document.id == document_id,

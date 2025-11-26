@@ -12,10 +12,8 @@ from app.core.celery_app import celery_app
 @shared_task(name="documents.index_document")
 def index_document_task(document_id: int) -> str:
     """
-    Tarea de Celery que simula la indexación de un documento:
-    - Lee el archivo desde disco.
-    - Genera un 'indexed_text' simulado.
-    - Actualiza el estado del documento.
+    Celery task that simulates indexing a document by reading it from disk,
+    generating a fake 'indexed_text', and updating the document status.
     """
     db: Session = SessionLocal()
     try:
@@ -23,12 +21,12 @@ def index_document_task(document_id: int) -> str:
         if doc is None:
             return f"Document {document_id} not found"
 
-        # Actualizar estado a PROCESSING
+        # Update status to PROCESSING
         doc.status = DocumentStatus.PROCESSING
         db.commit()
         db.refresh(doc)
 
-        # Ruta del archivo
+        # File path
         file_path = Path(settings.FILES_DIR) / doc.filename
 
         if not file_path.exists():
@@ -37,10 +35,10 @@ def index_document_task(document_id: int) -> str:
             db.commit()
             return f"File for document {document_id} not found"
 
-        # Leemos el contenido (texto binario, aquí solo simulamos)
+        # Read the content (binary text; still just a simulation)
         data = file_path.read_bytes()
 
-        # Simular algún tipo de "indexación"
+        # Simulate some form of "indexing"
         size_kb = len(data) / 1024
         doc.indexed_text = f"Indexed document #{doc.id}, size ~{size_kb:.2f} KB."
         doc.status = DocumentStatus.INDEXED
@@ -49,7 +47,7 @@ def index_document_task(document_id: int) -> str:
         return f"Document {document_id} indexed successfully"
 
     except Exception as e:
-        # En caso de error, marcamos como FAILED
+        # On error, mark the document as FAILED
         doc = db.query(Document).filter(Document.id == document_id).first()
         if doc is not None:
             doc.status = DocumentStatus.FAILED
@@ -63,9 +61,8 @@ def index_document_task(document_id: int) -> str:
 @celery_app.task(name="app.tasks.documents.retry_failed_documents")
 def retry_failed_documents_task() -> int:
     """
-    Busca documentos con estado FAILED y vuelve a encolarlos
-    para reindexar.
-    Devuelve cuántos documentos se reintentaron.
+    Find documents marked as FAILED, queue them again for re-indexing,
+    and return how many retries were triggered.
     """
     db: Session = SessionLocal()
     retried = 0
@@ -77,12 +74,12 @@ def retry_failed_documents_task() -> int:
         )
 
         for doc in failed_docs:
-            # Volvemos a marcar como UPLOADED/PROCESSING
+            # Reset status to UPLOADED/PROCESSING
             doc.status = DocumentStatus.UPLOADED
             db.commit()
             db.refresh(doc)
 
-            # Encolamos de nuevo la tarea de indexado
+            # Requeue the indexing task
             index_document_task.delay(doc.id)
             retried += 1
 

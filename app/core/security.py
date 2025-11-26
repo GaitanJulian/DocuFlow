@@ -65,8 +65,8 @@ def create_access_token(
 
 def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
     """
-    Devuelve el payload decodificado o None si el token no es válido.
-    (Si en tu código prefieres que lance excepción, puedes cambiarlo).
+    Return the decoded payload or None if the token is invalid.
+    (Change this to raise an exception if your code prefers that behavior.)
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

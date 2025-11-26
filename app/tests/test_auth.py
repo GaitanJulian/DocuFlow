@@ -1,10 +1,11 @@
 import uuid
 
+
 def test_register_and_login(client):
-    # Email único para evitar conflictos con datos previos
+    # Unique email to avoid conflicts with previous data
     email = f"test_{uuid.uuid4().hex}@example.com"
 
-    # 1. Registrar usuario
+    # 1. Register a user
     response = client.post(
         "/auth/register",
         json={

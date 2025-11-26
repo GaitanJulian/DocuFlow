@@ -20,7 +20,7 @@ class User(Base):
         DateTime(timezone=True), default=datetime.utcnow
     )
 
-    # Relación 1:N con Document
+    # One-to-many relationship with Document
     documents: Mapped[list["Document"]] = relationship(
         "Document",
         back_populates="owner",
